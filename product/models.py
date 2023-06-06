@@ -17,6 +17,7 @@ class Category(models.Model):
 class Product(models.Model):
     categories = models.ManyToManyField(Category, related_name="products")
     name = models.CharField(max_length=100)
+    image = models.ImageField(null=True, blank=True, default="image.jpg", upload_to="product/")
     # description = models.TextField(blank=True, null=True)
     description = RichTextField(blank=True, null=True)
     is_in_stock = models.BooleanField(default=True)
@@ -30,6 +31,13 @@ class Product(models.Model):
     
     def __str__(self):
         return self.name
+    
+    # Method for view image-large in detail page:
+    def view_image(self):
+        from django.utils.safestring import mark_safe
+        if self.image:
+            return mark_safe(f'<img src={self.image.url} style="max-height:100px; max-width:200px;"></img>')
+        return mark_safe(f'<h2>No Image</h2>')
 
 
 class Review(models.Model):

@@ -36,10 +36,13 @@ class ProductModelAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug' : ['name']}
     # Tarihe göre filtreleme başlığı:
     date_hierarchy = 'create_date'
+    # Resim gösterme read_only olarak çağır:
+    readonly_fields = ["view_image"]
     # Form liste görüntüleme
     fields = (
         ('name', 'is_in_stock'),
         ('slug'),
+        ('image', 'view_image'),
         ('description'),
         ('categories'),
     )
@@ -98,6 +101,16 @@ class ProductModelAdmin(admin.ModelAdmin):
         return count
 
     list_display += ['how_many_reviews']
+    
+    # Listede küçük resim göster:
+    def view_image_in_list(self, obj):
+        from django.utils.safestring import mark_safe
+        if obj.image:
+            return mark_safe(f'<img src={obj.image.url} style="height:30px; width:30px;"></img>')
+        return '-*-'
+
+    list_display = ['view_image_in_list'] + list_display
+    view_image_in_list.short_description = 'IMAGE'
 
 admin.site.register(Product, ProductModelAdmin)
 
