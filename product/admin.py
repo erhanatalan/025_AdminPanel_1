@@ -1,65 +1,74 @@
 from django.contrib import admin
 from .models import *
 
-# Register your models here.
+admin.site.site_title = 'Clarusway Title'
+admin.site.site_header = 'Clarusway Header'
+admin.site.index_title = 'Clarusway Index Page'
 
-admin.site.site_title = 'Atalan Page'
-admin.site.site_header = 'Atalan Header'
-admin.site.index_title = 'Atalan Index Title'
+# -----------------------------------------------------
+# ProductModelAdmin
+
+# Ürünlerin yorumlarını ürün-detay sayfasında göster:
+class ReviewInline(admin.TabularInline):  # Alternatif: StackedInline (farklı görünüm aynı iş)
+    model = Review # Model
+    extra = 1 # Yeni ekleme için ekstra boş alan
+    classes = ['collapse'] # Görüntülme tipi (default: tanımsız)
 
 
-class ProductAdmin(admin.ModelAdmin):
-
-    list_display = ['id',
-        'name',
-        'is_in_stock',
-        'create_date',
-        'update_date']
-
+class ProductModelAdmin(admin.ModelAdmin):
+    # Tablo sutunları:
+    list_display = ['id', 'name', 'is_in_stock', 'create_date', 'update_date']
+    # Tablo üzerinde güncelleyebilme:
     list_editable = ['is_in_stock']
-    
-    list_display_links = ('id', 'name')
-
-    list_filter = (
-        'is_in_stock',
-        'create_date',
-        'update_date')
-
-    search_fields = ('id', 'name')
-
-
-    # siralama
-    ordering = ['name']
-
-     # Sayfa başına kayıt sayısı:
+    # Kayda gitmek için linkleme:
+    list_display_links = ['id', 'name']
+    # Filtreleme (arama değil):
+    list_filter = ['is_in_stock', 'create_date', 'update_date']
+    # Arama:
+    search_fields = ['id', 'name']
+    # Arama bilgilendirme yazısı: 
+    search_help_text = 'Arama Yapmak için burayı kullanabilirsiniz.'
+    # Default Sıralama:
+    ordering = ['-create_date', '-id']
+    # Sayfa başına kayıt sayısı:
     list_per_page = 20
-
     # Otomatik kaıyıt oluştur:
     prepopulated_fields = {'slug' : ['name']}
-
+    # Tarihe göre filtreleme başlığı:
+    date_hierarchy = 'create_date'
     # Form liste görüntüleme
-    # fields = (
-    #     ('name', 'is_in_stock'),
-    #     ('slug'),
-    #     ('description')
-    # )
-
-
+    fields = (
+        ('name', 'is_in_stock'),
+        ('slug'),
+        ('description'),
+        ('categories'),
+    )
+    '''
     # Detaylı form liste görüntüleme
     fieldsets = (
-        ('General Settings', {
-            "classes": ("wide",),
-            "fields": (
-                ('name', 'slug'),
-                "is_in_stock"
-            ),
-        }),
-        ('Optionals Settings', {
-            "classes": ("collapse",),
-            "fields": ("description",),
-            'description': "You can use this section for optionals settings"
-        }),
+        (
+            'General Settings', {
+                "classes": ("wide",),
+                "fields": (
+                    ('name', 'slug'),
+                    "is_in_stock"
+                ),
+            }
+        ),
+        (
+            'Optionals Settings', {
+                "classes": ("collapse",),
+                "fields": ("description", "categories"),
+                'description': "You can use this section for optionals settings"
+            }
+        ),
     )
+    '''
+    # İlişkili tablo (many2many) nasıl görünsün:
+    filter_horizontal = ["categories"] # Yatay Görünüm
+    # filter_vertical = ["categories"] # Dikey Görünüm
+    # Ürün yorumlarını düzenle:
+    inlines = [ReviewInline]
 
     def set_stock_in(self, request, queryset):
         count = queryset.update(is_in_stock=True)
@@ -71,18 +80,36 @@ class ProductAdmin(admin.ModelAdmin):
         self.message_user(request, f'{count} adet "Stokta Yok" olarak işaretlendi.')
 
     actions = ('set_stock_in', 'set_stock_out')
+    set_stock_in.short_description = 'İşaretli ürünleri stokta VAR olarak güncelle'
+    set_stock_out.short_description = 'İşaretli ürünleri stokta YOK olarak güncelle'
 
-    set_stock_in.short_description = 'İşaretli ürünleri stoğa ekle'
-    set_stock_out.short_description = 'İşaretli ürünleri stoktan çıkar'
-
+    # Kaç gün önce eklendi:
     def added_days_ago(self, object):
         from django.utils import timezone
         different = timezone.now() - object.create_date
         return different.days
+    
+    # list_display = ['id', 'name', 'is_in_stock', 'added_days_ago', 'create_date', 'update_date']
+    list_display += ['added_days_ago']
 
-    list_display +=['added_days_ago']
+    # Kaçtane yorum var:
+    def how_many_reviews(self, object):
+        count = object.reviews.count()
+        return count
 
+    list_display += ['how_many_reviews']
 
+admin.site.register(Product, ProductModelAdmin)
 
+# -----------------------------------------------------
+# ReviewModelAdmin
 
-admin.site.register(Product, ProductAdmin)
+class ReviewModelAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'created_date', 'is_released')
+    list_per_page = 50
+    # raw_id_fields = ('product',) 
+
+admin.site.register(Review, ReviewModelAdmin)
+
+# -----------------------------------------------------
+admin.site.register(Category)

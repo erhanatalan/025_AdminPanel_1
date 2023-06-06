@@ -1,8 +1,23 @@
 from django.db import models
 from ckeditor.fields import RichTextField
 
-class Product(models.Model):
+
+class Category(models.Model):
     name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
+        
+    def __str__(self):
+        return self.name
+
+
+class Product(models.Model):
+    categories = models.ManyToManyField(Category, related_name="products")
+    name = models.CharField(max_length=100)
+    # description = models.TextField(blank=True, null=True)
     description = RichTextField(blank=True, null=True)
     is_in_stock = models.BooleanField(default=True)
     slug = models.SlugField(null=True, blank=True)
@@ -16,6 +31,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     review = models.TextField()
@@ -27,4 +43,4 @@ class Review(models.Model):
         verbose_name_plural = 'Reviews'
 
     def __str__(self):
-        return f"{self.product.name} - {self.review}" 
+        return f"{self.product.name} - {self.review}"  
